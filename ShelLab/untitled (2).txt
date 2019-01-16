@@ -1,0 +1,44 @@
+./sdriver.pl -t trace01.txt -s ./tsh -a "-p"
+TO RUN ^^^^^^^^^^^^^^^^^^^
+
+
+can only run one in the foreground and as many as I want in the background
+
+in STRUCT:
+jid = job identifier (1, 2, etc)
+state = fg, bg, or undefined
+and keep track of original command line to start job
+pid = process ID (Processes that are maintained by the system)
+
+zombie process = process in its terminated state
+
+in EVAL:::
+by parsing the command line we then can see that out argv[0]= "ls" 
+argv[1] = "-l"
+argv[2] = 0x0 so the argument vector itself is terminated by NULL 0 so good!
+- then we call builtin and this allows us to create the child processes, exec them and also QUIT the shell
+- we only fork and exec for the builtin processes
+- if we are in child then we call exec
+- fork means creating a copy of itself or create new processes, then the copy or the child process calls the EXEC process to cease execuation of its former program in favor of the new one. runs new executable basically
+- if(!bg) means if not in background, so else means it is and print a status message
+- need to add job after creating a process
+    // In eval, the parent must use sigprocmask to block SIGCHLD signals before it forks the child,
+    // and then unblock these signals, again using sigprocmask after it adds the child to the job list by calling addjob.
+    // Since children inherit the blocked vectors of their parents,
+    // the child must be sure to then unblock SIGCHLD signals before it execs the new program.
+
+    // your shell is running in the foreground process group.
+    // If your shell then creates a child process, by default that child will also be a member of the foreground process group.
+    // Since typing ctrl-c sends a SIGINT to every process in the foreground group,
+    // typing ctrl-c will send a SIGINT to your shell, as well as to every process that your shell created, which obviously isn’t correct.
+    
+    // Here is the workaround: After the fork, but before the execve, the child process should call setpgid(0, 0),
+    // which puts the child in a new process group whose group ID is identical to the child’s PID.
+    // This ensures that there will be only one process, your shell, in the foreground process group.
+    // When you type ctrl-c, the shell should catch the resulting SIGINT and then forward it to the appropriate foreground job
+    // (or more precisely, the process group that contains the foreground job).
+
+
+in BUILTIN:::
+if fork()==0 then we are in a child process
+If the user has typed a built-in command then execute it immediately.
