@@ -1,0 +1,7 @@
+2: the push statements allocate memory,
+cmpl 0x1 makes sure the first value is equal to 1 to jump the explode, move rsp to rbx, then go down and do x/d $rsp+4,8,16, ect.
+3: x/s 0x40242e to know it goes int char int. Cant be greater than 7 0x7, 0xc(%rsp) so it can be any number less than 7 for first number. kept doing ni until jumped to mov 0x7a, this my last number. then the middle value is p/x $al which in ascii
+4: second number it subtracts 2 and copares to 2 so it must be 4 or less for second number. passes in 2 numbers 2 and 7 to func 4, cant figure out what it does but if you step through the recursion and then print eax after it gives you the value that it should be compared with which is 66
+5: check if 6 letters than loops through. print rdi after loop to see what original changed too. then use this code to find esi.
+6: the address for the linked list was line 136 we just print the address with x/30wx 0x6042e0
+7:disasemble phase_defused, do x/s for line 38 address to find that we need a string to unlock code, then do x/s of line 63 to find that it is dr evil,
